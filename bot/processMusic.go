@@ -290,20 +290,27 @@ func processMusic(musicID int, message tgbotapi.Message, bot *tgbotapi.BotAPI) (
 	}
 
 	var replacer = strings.NewReplacer("/", " ", "?", " ", "*", " ", ":", " ", "|", " ", "\\", " ", "<", " ", ">", " ", "\"", " ")
+	var newDir = cacheDir+"/"+fmt.Sprintf("%d", timeStamp)
 	fileName := replacer.Replace(fmt.Sprintf("%v - %v.%v", strings.Replace(songInfo.SongArtists, "/", ",", -1), songInfo.SongName, songInfo.FileExt))
-	err = os.Rename(cacheDir+"/"+fmt.Sprintf("%d-%s", timeStamp, path.Base(url)), cacheDir+"/"+fileName)
+	var filePath = newDir+"/"+fileName
+	err	= os.Mkdir(newDir, os.ModePerm)
 	if err != nil {
-		fileName = fmt.Sprintf("%d-%s", timeStamp, path.Base(url))
+		sendFailed(err)
+		return err
+    }
+	err = os.Rename(cacheDir+"/"+fmt.Sprintf("%d-%s", timeStamp, path.Base(url)), filePath)
+	if err != nil {
+		filePath = cacheDir+"/"+fmt.Sprintf("%d-%s", timeStamp, path.Base(url))
 	}
 
 	mark := marker.CreateMarker(songDetail.Songs[0], songURL.Data[0])
 
-	file, _ := os.Open(cacheDir + "/" + fileName)
+	file, _ := os.Open(filePath)
 	defer file.Close()
 
 	err = marker.AddMusicID3V2(file, pic, mark)
 	if err != nil {
-		file, _ = os.Open(cacheDir + "/" + fileName)
+		file, _ = os.Open(filePath)
 		defer file.Close()
 		err = marker.AddMusicID3V2(file, nil, mark)
 	}
@@ -318,7 +325,7 @@ func processMusic(musicID int, message tgbotapi.Message, bot *tgbotapi.BotAPI) (
 		return err
 	}
 
-	audio, err := sendMusic(songInfo, cacheDir+"/"+fileName, resizePicPath, message, bot)
+	audio, err := sendMusic(songInfo, filePath, resizePicPath, message, bot)
 	if err != nil {
 		sendFailed(err)
 		return err
@@ -334,11 +341,15 @@ func processMusic(musicID int, message tgbotapi.Message, bot *tgbotapi.BotAPI) (
 		return err
 	}
 
-	for _, f := range []string{cacheDir + "/" + fileName, resizePicPath, picPath} {
+	for _, f := range []string{filePath, resizePicPath, picPath} {
 		err := os.Remove(f)
 		if err != nil {
 			logrus.Errorln(err)
 		}
+	}
+	err = os.RemoveAll(newDir)
+	if err != nil {
+		logrus.Errorln(err)
 	}
 
 	deleteMsg := tgbotapi.NewDeleteMessage(msgResult.Chat.ID, msgResult.MessageID)

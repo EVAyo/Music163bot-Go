@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"sort"
@@ -135,4 +136,40 @@ func getProgramRealID(programID int) int {
 		return programDetail.Program.MainSong.ID
 	}
 	return 0
+}
+
+// 获取重定向后的地址
+func getRedirectUrl(text string) (string) {
+	var replacer = strings.NewReplacer("\n", "", " ", "")
+	messageText := replacer.Replace(text)
+	musicUrl := regUrl.FindStringSubmatch(messageText)
+	if len(musicUrl) != 0 {
+		if strings.Contains(musicUrl[0], "163cn.tv") {
+			var url = musicUrl[0]
+			// 创建新的请求
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+	 			return text
+			}
+   
+			// 设置 CheckRedirect 函数来处理重定向
+			client := &http.Client{
+	 		  CheckRedirect: func(req *http.Request, via []*http.Request) error {
+	  			return http.ErrUseLastResponse
+	 		  },
+			}
+   
+			// 执行请求
+			resp, err := client.Do(req)
+			if err != nil {
+	 		  return text
+			}
+			defer resp.Body.Close()
+   
+			// 返回最终重定向的网址
+			location := resp.Header.Get("location")
+			return location
+		}
+	}
+	return text
 }
