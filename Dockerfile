@@ -4,8 +4,6 @@ WORKDIR /build
 
 ADD . /build
 
-RUN go mod tidy
-
 RUN bash build.sh
 
 FROM scratch as runner
