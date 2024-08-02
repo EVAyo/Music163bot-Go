@@ -13,6 +13,9 @@ services:
       - ./config.ini:/app/config.ini
       - ./cache:/app/cache
       - ./log:/app/log
+    depends_on:
+      bot-api:
+        condition: service_started
     networks:
       - music163bot
 
