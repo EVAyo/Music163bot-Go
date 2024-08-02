@@ -1,4 +1,4 @@
-FROM golang as builder
+FROM golang AS builder
 
 WORKDIR /build
 
@@ -6,7 +6,7 @@ ADD . /build
 
 RUN bash build.sh
 
-FROM scratch as runner
+FROM scratch AS runner
 
 WORKDIR /app
 
