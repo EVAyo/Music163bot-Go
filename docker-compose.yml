@@ -9,7 +9,7 @@ services:
 
   bot:
     image: ghcr.io/xiaomengxinx/music163bot-go
-    volume:
+    volumes:
       - ./config.ini:/app/config.ini
       - ./cache:/app/cache
       - ./log:/app/log
