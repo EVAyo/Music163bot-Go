@@ -44,6 +44,9 @@ func Start(conf map[string]string) (actionCode int) {
 		logrus.Errorln(err)
 		return 1
 	}
+	db, _ := MusicDB.DB()
+	db.SetMaxOpenConns(1)
+	defer db.Close()
 
 	if config["MUSIC_U"] != "" {
 		data = utils.RequestData{

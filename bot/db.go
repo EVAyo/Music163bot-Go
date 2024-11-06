@@ -33,7 +33,7 @@ func initDB(config map[string]string) (err error) {
 	if config["Database"] != "" {
 		database = config["Database"]
 	}
-	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)", database)), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s?_pragma=busy_timeout(5000)", database)), &gorm.Config{
 		Logger:      NewLogger(logger.Silent),
 		PrepareStmt: true,
 	})
