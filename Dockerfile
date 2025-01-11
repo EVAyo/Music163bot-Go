@@ -6,7 +6,9 @@ ADD . /build
 
 RUN bash build.sh
 
-FROM scratch AS runner
+FROM alpine:3.21 AS runner
+
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
