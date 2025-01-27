@@ -4,12 +4,13 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/XiaoMengXinX/Music163Api-Go/api"
 	"github.com/XiaoMengXinX/Music163Api-Go/types"
@@ -58,16 +59,16 @@ func dirExists(path string) bool {
 
 // 校验 md5
 func verifyMD5(filePath string, md5str string) (bool, error) {
-	file, err := ioutil.ReadFile(filePath)
+	f, err := os.Open(filePath)
 	if err != nil {
 		return false, err
 	}
-	md5data := md5.Sum(file)
-	var md5buffer []byte
-	for _, j := range md5data[:] {
-		md5buffer = append(md5buffer, j)
+	defer f.Close()
+	md5hash := md5.New()
+	if _, err := io.Copy(md5hash, f); err != nil {
+		return false, err
 	}
-	if hex.EncodeToString(md5buffer) != md5str {
+	if hex.EncodeToString(md5hash.Sum(nil)) != md5str {
 		return false, fmt.Errorf(md5VerFailed)
 	}
 	return true, nil
@@ -77,6 +78,16 @@ func verifyMD5(filePath string, md5str string) (bool, error) {
 func parseMusicID(text string) int {
 	var replacer = strings.NewReplacer("\n", "", " ", "")
 	messageText := replacer.Replace(text)
+	musicUrl := regUrl.FindStringSubmatch(messageText)
+	if len(musicUrl) != 0 {
+		if strings.Contains(musicUrl[0], "song") {
+			ur, _ := url.Parse(musicUrl[0])
+			id := ur.Query().Get("id")
+			if musicid, _ := strconv.Atoi(id); musicid != 0 {
+				return musicid
+			}
+		}
+	}
 	musicid, _ := strconv.Atoi(linkTestMusic(messageText))
 	return musicid
 }
@@ -89,13 +100,22 @@ func parseProgramID(text string) int {
 	return programid
 }
 
+// 提取数字
+func extractInt(text string) string {
+	matchArr := regInt.FindStringSubmatch(text)
+	if len(matchArr) == 0 {
+		return ""
+	}
+	return matchArr[0]
+}
+
 // 解析分享链接
 func linkTestMusic(text string) string {
-	return reg5.ReplaceAllString(reg4.ReplaceAllString(reg3.ReplaceAllString(reg2.ReplaceAllString(reg1.ReplaceAllString(text, ""), ""), ""), ""), "")
+	return extractInt(reg5.ReplaceAllString(reg4.ReplaceAllString(reg3.ReplaceAllString(reg2.ReplaceAllString(reg1.ReplaceAllString(text, ""), ""), ""), ""), ""))
 }
 
 func linkTestProgram(text string) string {
-	return reg5.ReplaceAllString(reg4.ReplaceAllString(reg3.ReplaceAllString(regP4.ReplaceAllString(regP3.ReplaceAllString(regP2.ReplaceAllString(regP1.ReplaceAllString(text, ""), ""), ""), ""), ""), ""), "")
+	return extractInt(reg5.ReplaceAllString(reg4.ReplaceAllString(reg3.ReplaceAllString(regP4.ReplaceAllString(regP3.ReplaceAllString(regP2.ReplaceAllString(regP1.ReplaceAllString(text, ""), ""), ""), ""), ""), ""), ""))
 }
 
 // 判断 error 是否为超时错误
@@ -104,12 +124,6 @@ func isTimeout(err error) bool {
 		return true
 	}
 	return false
-}
-
-// 判断是否是愚人节
-func isAprilFoolsDay() bool {
-	_, m, d := time.Now().Date()
-	return m == time.Month(4) && d == 1
 }
 
 // 获取电台节目的 MusicID
@@ -122,4 +136,40 @@ func getProgramRealID(programID int) int {
 		return programDetail.Program.MainSong.ID
 	}
 	return 0
+}
+
+// 获取重定向后的地址
+func getRedirectUrl(text string) (string) {
+	var replacer = strings.NewReplacer("\n", "", " ", "")
+	messageText := replacer.Replace(text)
+	musicUrl := regUrl.FindStringSubmatch(messageText)
+	if len(musicUrl) != 0 {
+		if strings.Contains(musicUrl[0], "163cn.tv") {
+			var url = musicUrl[0]
+			// 创建新的请求
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+	 			return text
+			}
+   
+			// 设置 CheckRedirect 函数来处理重定向
+			client := &http.Client{
+	 		  CheckRedirect: func(req *http.Request, via []*http.Request) error {
+	  			return http.ErrUseLastResponse
+	 		  },
+			}
+   
+			// 执行请求
+			resp, err := client.Do(req)
+			if err != nil {
+	 		  return text
+			}
+			defer resp.Body.Close()
+   
+			// 返回最终重定向的网址
+			location := resp.Header.Get("location")
+			return location
+		}
+	}
+	return text
 }

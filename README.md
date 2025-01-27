@@ -5,8 +5,8 @@
 <p align="center">演示bot：<a href="https://t.me/Music163bot">https://t.me/Music163bot</a></p>
 
 <p align="center">
-	<a href="https://goreportcard.com/report/github.com/XiaoMengXinX/Music163bot-Go">
-      <img src="https://goreportcard.com/badge/github.com/XiaoMengXinX/Music163bot-Go?style=flat-square">
+	<a href="https://goreportcard.com/report/github.com/XiaoMengXinX/Music163bot-Go/v2">
+      <img src="https://img.shields.io/badge/go%20report-A+-brightgreen.svg?style=flat">
 	</a>
 	<a href="https://github.com/XiaoMengXinX/Music163bot-Go/releases">
     <img src="https://img.shields.io/github/v/release/XiaoMengXinX/Music163bot-Go?include_prereleases&style=flat-square">
@@ -54,7 +54,7 @@ GOOS=windows GOARCH=amd64 bash build.sh
 # 你的 Bot Token
 BOT_TOKEN = YOUR_BOT_TOKEN
 
-# 你的网易云 cookie （用于下载无损歌曲）
+# 你的网易云 cookie 中 MUSIC_U 项的值（用于下载无损歌曲）
 MUSIC_U = YOUR_MUSIC_U
 
 
